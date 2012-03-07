@@ -6,7 +6,6 @@
 <%= test :backbone %>
 
 <h1 id="qunit-header"><%= @title %></h1>
-
 <div id="jquery-version">
   jQuery version:
 
@@ -15,6 +14,13 @@
     <%= jquery_link v %>
   <% end %>
  <%= (' • ' + jquery_link('edge')) if File.exist?(settings.root + '/public/vendor/jquery.js') %>
+ 
+ Backbone version:
+
+ <% backbone_versions.each do |v| %>
+   <%= ' • ' if v != backbone_versions.first %>
+   <%= backbone_link v %>
+ <% end %>
 </div>
 <h2 id="qunit-banner"></h2>
 <div id="qunit-testrunner-toolbar"></div>

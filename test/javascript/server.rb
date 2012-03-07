@@ -48,25 +48,38 @@ end
 use AssetPath, :urls => ['/vendor/assets/javascripts'], :root => File.expand_path('../..', settings.root)
 
 JQUERY_VERSIONS = %w[ 1.6 1.6.1 1.6.2 1.6.3 1.6.4 1.7 1.7.1 ].freeze
+BACKBONE_VERSIONS = %w[ 0.5.3 0.9.1 ].freeze
 
 helpers do
-  def jquery_link version
-    if params[:version] == version
-      "[#{version}]"
+  def jquery_link jquery_version
+    if params[:jquery_version] == jquery_version
+      "[#{jquery_version}]"
     else
-      "<a href='/?version=#{version}'>#{version}</a>"
+      "<a href='/?jquery_version=#{jquery_version}&backbone_version=#{params[:backbone_version]}'>#{jquery_version}</a>"
     end
   end
 
   def jquery_src
-    if params[:version] == 'edge' then '/vendor/jquery.js'
-    else "http://code.jquery.com/jquery-#{params[:version]}.js"
+    if params[:jquery_version] == 'edge' then '/vendor/jquery.js'
+    else "http://code.jquery.com/jquery-#{params[:jquery_version]}.js"
     end
   end
 
   def test_base
     names = ['/vendor/qunit.js', 'settings']
     names.map { |name| script_tag name }.join("\n")
+  end
+  
+  def backbone_link backbone_version
+    if params[:backbone_version] == backbone_version
+      "[#{backbone_version}]"
+    else
+      "<a href='/?jquery_version=#{params[:jquery_version]}&backbone_version=#{backbone_version}'>#{backbone_version}</a>"
+    end
+  end
+  
+  def backbone_src
+    "/vendor/backbone-#{params[:backbone_version]}.js"
   end
 
   def test *types
@@ -85,10 +98,15 @@ helpers do
   def jquery_versions
     JQUERY_VERSIONS
   end
+  
+  def backbone_versions
+    BACKBONE_VERSIONS
+  end
 end
 
 get '/' do
-  params[:version] ||= '1.7.1'
+  params[:jquery_version] ||= '1.7.1'
+  params[:backbone_version] ||= '0.9.1'
   erb :index
 end
 

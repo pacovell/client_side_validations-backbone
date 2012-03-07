@@ -6,7 +6,7 @@ module('Backbone: Validate View', {
       label_tag: '<div class="field_with_errors"><label id="label_tag" /></div>',
       validators: {'name':{"presence":{"message": "must be present"}}}
     }
-    UserModel = Backbone.Model.extend({ url: '/users.json' });
+    UserModel = Backbone.Model.extend({ url: '/users' });
     ClientSideValidations.decorateModel(UserModel, 'user');
     
     UserView = Backbone.View.extend({ });
@@ -37,7 +37,6 @@ module('Backbone: Validate View', {
     userView.bind('success', function() {
       submitSuccess = true;
     });
-
   }
 });
 
@@ -63,7 +62,7 @@ asyncTest('Validate form with valid form', 1, function() {
   setTimeout(function() {
     start();
     ok(submitSuccess == true);
-  }, 30);
+  }, 300);
 });
 
 // Don't validate before focusout
