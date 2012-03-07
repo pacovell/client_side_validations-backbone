@@ -4,8 +4,31 @@
 
   $ = jQuery;
 
+  $.fn.validate = function() {
+    return this.filter('form[data-validate]').each(function() {
+      var BackboneModel, BackboneView, backboneModel, backboneView, form, formId, settings;
+      form = $(this);
+      formId = form.attr('id');
+      settings = window.ClientSideValidations.forms[formId];
+      BackboneModel = ClientSideValidations.decorateModel(Backbone.Model.extend({
+        url: '/users'
+      }), formId, settings['model_name']);
+      BackboneView = ClientSideValidations.decorateView(Backbone.View.extend({}));
+      backboneModel = new BackboneModel();
+      backboneView = new BackboneView({
+        el: "#" + formId,
+        model: backboneModel
+      });
+      window.ClientSideValidations.backboneModels[formId] = backboneModel;
+      return window.ClientSideValidations.backboneViews[formId] = backboneView;
+    });
+  };
+
   window.ClientSideValidations = {
     models: {},
+    forms: {},
+    backboneModels: {},
+    backboneViews: {},
     validators: {
       all: function() {
         return jQuery.extend({}, ClientSideValidations.validators.local, ClientSideValidations.validators.remote);
@@ -235,17 +258,18 @@
         }
       }
     },
-    decorateModel: function(TargetModel, modelName) {
+    decorateModel: function(TargetModel, formName, modelName) {
       var originalValidate;
+      TargetModel.prototype._csvFormName = formName;
       TargetModel.prototype._csvModelName = modelName;
       originalValidate = TargetModel.prototype.validate;
-      return TargetModel.prototype.validate = function(attrs) {
+      TargetModel.prototype.validate = function(attrs) {
         var attr, attribute_validators, context, element, errors, fn, kind, message, settings, valid, validators, value, _i, _len, _ref;
         if (originalValidate) {
           errors = originalValidate.call(this, attrs);
           if (errors) return errors;
         }
-        settings = ClientSideValidations.models[modelName];
+        settings = ClientSideValidations.forms[formName];
         validators = settings.validators;
         errors = {};
         valid = true;
@@ -281,6 +305,7 @@
         }
         if (!valid) return errors;
       };
+      return TargetModel;
     },
     decorateView: function(TargetView) {
       var attrNameToKey, events, key, keyToAttrName, originalInitialize, value, _ref;
@@ -298,13 +323,13 @@
       TargetView.prototype.events = events;
       originalInitialize = TargetView.prototype.initialize;
       TargetView.prototype.initialize = function() {
-        var _ref2, _ref3;
+        var _ref2, _ref3,
+          _this = this;
         if (originalInitialize) originalInitialize.apply(this, arguments);
         this.changed = {};
         if ((_ref2 = this.model) != null) {
           _ref2.bind('change', function(model) {
-            var _this = this;
-            return jQuery(this.el).find('input:enabled').each(function(index, element) {
+            return jQuery(_this.el).find('input:enabled').each(function(index, element) {
               return _this._csvRemoveError(jQuery(element));
             });
           }, this);
@@ -315,8 +340,8 @@
             _results = [];
             for (key in errors) {
               message = errors[key];
-              if (this.changed[key]) {
-                _results.push(this._csvAddError(jQuery(this.el).find("[name='" + (keyToAttrName(key, this.model._csvModelName)) + "']"), message));
+              if (_this.changed[key]) {
+                _results.push(_this._csvAddError(jQuery(_this.el).find("[name='" + (keyToAttrName(key, _this.model._csvModelName)) + "']"), message));
               }
             }
             return _results;
@@ -366,19 +391,19 @@
       };
       TargetView.prototype._csvAddError = function(element, message) {
         var settings;
-        settings = window.ClientSideValidations.models[this.model._csvModelName];
+        settings = window.ClientSideValidations.forms[this.model._csvFormName];
         return ClientSideValidations.formBuilders[settings.type].add(element, settings, message);
       };
       TargetView.prototype._csvRemoveError = function(element) {
         var settings;
-        settings = window.ClientSideValidations.models[this.model._csvModelName];
+        settings = window.ClientSideValidations.forms[this.model._csvFormName];
         return ClientSideValidations.formBuilders[settings.type].remove(element, settings);
       };
       attrNameToKey = function(element) {
         var _ref2, _ref3;
         return (_ref2 = jQuery(element).attr('name')) != null ? (_ref3 = _ref2.match(/\[([^\]]+)\]/)) != null ? _ref3[1] : void 0 : void 0;
       };
-      return keyToAttrName = function(attr_name, scope) {
+      keyToAttrName = function(attr_name, scope) {
         if (scope == null) scope = "";
         if (scope.length) {
           return "" + scope + "[" + attr_name + "]";
@@ -386,6 +411,7 @@
           return "" + attr_name;
         }
       };
+      return TargetView;
     }
   };
 

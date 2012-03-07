@@ -1,6 +1,6 @@
 module('Backbone: Validate Model', {
   setup: function() {
-    ClientSideValidations.models['user'] = {
+    ClientSideValidations.forms['user'] = {
       validators: {'name':{"presence":{"message": "must be present"}}}
     }
     UserModel = Backbone.Model.extend({ url: '/users' });

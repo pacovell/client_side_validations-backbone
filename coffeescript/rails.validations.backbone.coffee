@@ -6,8 +6,26 @@
 # http://www.opensource.org/licenses/mit-license.php
 
 $ = jQuery
+$.fn.validate = ->
+  @filter('form[data-validate]').each ->
+    form = $(@)
+    formId = form.attr('id')
+      
+    settings = window.ClientSideValidations.forms[formId]
+    BackboneModel = ClientSideValidations.decorateModel(Backbone.Model.extend({ url: '/users' }), formId, settings['model_name'])
+    BackboneView = ClientSideValidations.decorateView(Backbone.View.extend({ }))
+
+    backboneModel = new BackboneModel()
+    backboneView = new BackboneView({ el: "##{formId}", model: backboneModel })
+    
+    window.ClientSideValidations.backboneModels[formId] = backboneModel
+    window.ClientSideValidations.backboneViews[formId] = backboneView
+  
 window.ClientSideValidations =
   models: {}
+  forms: {}
+  backboneModels: {}
+  backboneViews: {}
   validators:
     all: -> jQuery.extend({}, ClientSideValidations.validators.local, ClientSideValidations.validators.remote)
     local:
@@ -191,7 +209,8 @@ window.ClientSideValidations =
   
   # Decorates a Backbone Model or child class.  Runs any pre-existing validations first, and if
   # they pass, then it runs the ClientSideValidations.
-  decorateModel: (TargetModel, modelName) ->
+  decorateModel: (TargetModel, formName, modelName) ->
+    TargetModel.prototype._csvFormName = formName
     TargetModel.prototype._csvModelName = modelName
     originalValidate = TargetModel.prototype.validate
     TargetModel.prototype.validate = (attrs) ->
@@ -202,7 +221,7 @@ window.ClientSideValidations =
         errors = originalValidate.call(@, attrs)
         return errors if errors
 
-      settings = ClientSideValidations.models[modelName]
+      settings = ClientSideValidations.forms[formName]
       validators = settings.validators
       errors = {}
       valid = true
@@ -236,6 +255,8 @@ window.ClientSideValidations =
       # if errors.length == 0 then form.trigger('form:validate:pass') else form.trigger('form:validate:fail')
       # form.trigger('form:validate:after')
       return errors unless valid
+
+    return TargetModel
     
   # Decorates a Backbone View or child class
   decorateView: (TargetView) ->
@@ -258,11 +279,11 @@ window.ClientSideValidations =
       # it won't show an error (how obnoxious!)
       @changed = {}
       
-      @model?.bind('change', (model) ->
+      @model?.bind('change', (model) =>
         jQuery(@el).find('input:enabled').each (index, element) =>
           @_csvRemoveError(jQuery(element))
       , @)
-      @model?.bind('error', (model, errors) -> 
+      @model?.bind('error', (model, errors) => 
         for key, message of errors when @changed[key]
           @_csvAddError(jQuery(@el).find("[name='#{keyToAttrName(key, @model._csvModelName)}']"), message)
       , @)
@@ -301,10 +322,10 @@ window.ClientSideValidations =
     #  Helper methods and functions
     #
     TargetView.prototype._csvAddError = (element, message) ->
-      settings = window.ClientSideValidations.models[@model._csvModelName]
+      settings = window.ClientSideValidations.forms[@model._csvFormName]
       ClientSideValidations.formBuilders[settings.type].add(element, settings, message)
     TargetView.prototype._csvRemoveError = (element) ->
-      settings = window.ClientSideValidations.models[@model._csvModelName]
+      settings = window.ClientSideValidations.forms[@model._csvFormName]
       ClientSideValidations.formBuilders[settings.type].remove(element, settings)
     
     attrNameToKey = (element) ->
@@ -315,3 +336,6 @@ window.ClientSideValidations =
         "#{scope}[#{attr_name}]"
       else
         "#{attr_name}"
+
+    return TargetView
+    

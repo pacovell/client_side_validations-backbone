@@ -1,22 +1,17 @@
-module('Backbone: Validate View', {
+module('Backbone: Validate Form', {
   setup: function() {
-    ClientSideValidations.models['user'] = {
+    ClientSideValidations.forms['new_user'] = {
       type: 'ActionView::Helpers::FormBuilder',
+      model_name: 'user',
       input_tag: '<div class="field_with_errors"><span id="input_tag" /><label for="user_name" class="message"></label></div>',
       label_tag: '<div class="field_with_errors"><label id="label_tag" /></div>',
       validators: {'name':{"presence":{"message": "must be present"}}}
     }
-    UserModel = Backbone.Model.extend({ url: '/users' });
-    ClientSideValidations.decorateModel(UserModel, 'user');
-    
-    UserView = Backbone.View.extend({ });
-    ClientSideValidations.decorateView(UserView);
-    
-    userModel = new UserModel();
 
     $('#qunit-fixture')
       .append($('<form />', {
-        id: 'user',
+        id: 'new_user',
+        'data-validate': 'true',
         action: 'user_form'  // Used to create an iFrame for tests; unnecessary in normal usage
       }))
       .find('form')
@@ -27,21 +22,17 @@ module('Backbone: Validate View', {
           type: 'text'
         }))
         .append($('<label for="user_name">Name</label>'));
+    $('form#new_user').validate();
 
-    userView = new UserView({
-      el: 'form',
-      model: userModel
-    });
-    
     submitSuccess = false;
-    userView.bind('success', function() {
+    ClientSideValidations.backboneViews['new_user'].bind('success', function() {
       submitSuccess = true;
     });
   }
 });
 
 asyncTest('Validate form with invalid input', 4, function() {
-  var form = $('form#user'), input = form.find('input#user_name');
+  var form = $('form#new_user'), input = form.find('input#user_name');
   var label = $('label[for="user_name"]');
 
   form.trigger('submit');
@@ -55,19 +46,19 @@ asyncTest('Validate form with invalid input', 4, function() {
 });
 
 asyncTest('Validate form with valid form', 1, function() {
-  var form = $('form#user'), input = form.find('input#user_name');
+  var form = $('form#new_user'), input = form.find('input#user_name');
   input.val('Test');
   
   form.trigger('submit');
   setTimeout(function() {
     start();
     ok(submitSuccess == true);
-  }, 300);
+  }, 30);
 });
 
 // Don't validate before focusout
 asyncTest('Validate form when input focusout first time (failed input)', 2, function () {
-  var form = $('form#user'), input = form.find('input#user_name');
+  var form = $('form#new_user'), input = form.find('input#user_name');
   
   input.val('');
   input.trigger('change');
@@ -81,7 +72,7 @@ asyncTest('Validate form when input focusout first time (failed input)', 2, func
 
 // Validate change from good to bad on focusout
 asyncTest('Validate form when good to bad on focusout', 2, function () {
-  var form = $('form#user'), input = form.find('input#user_name');
+  var form = $('form#new_user'), input = form.find('input#user_name');
   
   input.val('Test');
   input.trigger('focusout'); // First focusout
@@ -96,7 +87,7 @@ asyncTest('Validate form when good to bad on focusout', 2, function () {
 
 // Validate change from good to bad on focusout
 asyncTest('Validate form when bad to good on focusout', 2, function () {
-  var form = $('form#user'), input = form.find('input#user_name');
+  var form = $('form#new_user'), input = form.find('input#user_name');
   
   input.val('');
   input.trigger('focusout'); // First focusout
@@ -111,7 +102,7 @@ asyncTest('Validate form when bad to good on focusout', 2, function () {
 
 // Validate change from good to bad on change after focusout
 asyncTest('Validate form when good to bad on change after focusout', 2, function () {
-  var form = $('form#user'), input = form.find('input#user_name');
+  var form = $('form#new_user'), input = form.find('input#user_name');
   
   input.val('Test');
   input.trigger('focusout'); // First focusout
@@ -126,7 +117,7 @@ asyncTest('Validate form when good to bad on change after focusout', 2, function
 
 // Validate change from bad to good on change after focusout
 asyncTest('Validate form when bad to good on change after focusout', 2, function () {
-  var form = $('form#user'), input = form.find('input#user_name');
+  var form = $('form#new_user'), input = form.find('input#user_name');
   
   input.val('');
   input.trigger('focusout'); // First focusout
